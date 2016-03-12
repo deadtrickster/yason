@@ -18,6 +18,8 @@
    #:*parse-json-arrays-as-vectors*
    #:*parse-json-booleans-as-symbols*
    #:*parse-json-null-as-keyword*
+   #:create-container
+   #:add-attribute
 
    #:true
    #:false

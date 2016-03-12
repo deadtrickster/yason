@@ -133,22 +133,24 @@
              (format stream "cannot convert key ~S used in JSON object to hash table key"
                      (key-string c)))))
 
-(defun create-container ()
-  (ecase *parse-object-as*
-    ((:plist :alist)
-     nil)
-    (:hash-table
-     (make-hash-table :test #'equal))))
+(defgeneric create-container (type)
+  (:documentation "Creates container for json object")
+  (:method ((type (eql :plist)))
+    nil)
+  (:method ((type (eql :alist)))
+    nil)
+  (:method ((type (eql :hash-table)))
+    (make-hash-table :test #'equal)))
 
-(defun add-attribute (to key value)
-  (ecase *parse-object-as*
-    (:plist
-     (append to (list key value)))
-    (:alist
-     (acons key value to))
-    (:hash-table
-     (setf (gethash key to) value)
-     to)))
+(defgeneric add-attribute (type to key value)
+  (:documentation "Add key-value pair to json object container")
+  (:method ((type (eql :plist)) to key value)
+    (append to (list key value)))
+  (:method ((type (eql :alist)) to key value)
+    (acons key value to))
+  (:method ((type (eql :hash-table)) to key value)
+    (setf (gethash key to) value)
+    to))
 
 (define-condition expected-colon (error)
   ((key-string :initarg :key-string
@@ -158,7 +160,7 @@
                      (key-string c)))))
 
 (defun parse-object (input)
-  (let ((return-value (create-container)))
+  (let ((return-value (create-container *parse-object-as*)))
     (read-char input)
     (loop
       (when (eql (peek-char-skipping-whitespace input)
@@ -166,7 +168,8 @@
         (return))
       (skip-whitespace input)
       (setf return-value
-            (add-attribute return-value
+            (add-attribute *parse-object-as*
+	                   return-value
                            (let ((key-string (parse-string input)))
                              (prog1
                                  (or (funcall *parse-object-key-fn* key-string)
